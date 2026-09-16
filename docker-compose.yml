@@ -1,0 +1,38 @@
+services:
+  core-api:
+    build:
+      context: ./services/core-api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - SECRET_KEY
+      - JWT_EXPIRES_IN_SECONDS
+      - LOG_LEVEL
+      - CREDENTIALS
+      - CORS_ORIGINS
+      - DATABASE_URL
+      - DIRECT_URL
+      - FRONTEND_URL
+      - INVITATION_EXPIRY_HOURS
+      - SUPER_ADMIN_EMAIL
+      - SUPER_ADMIN_PASSWORD
+      - SUPER_ADMIN_NAME
+      - SUPER_ADMIN_COMPANY_NAME
+      - SUPER_ADMIN_COMPANY_SLUG
+    volumes:
+      - ./services/core-api/src:/app/src
+      - ./services/core-api/prisma:/app/prisma
+
+  web-frontend:
+    build:
+      context: ./services/web-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+    volumes:
+      - ./services/web-frontend/src:/app/src
+    depends_on:
+      - core-api
