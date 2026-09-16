@@ -128,17 +128,18 @@ sequenceDiagram
 
 ---
 
-## 5. Repos (7 total)
+## 5. Repos (8 total)
 
 | # | Repo | Purpose |
 |---|---|---|
-| 1 | `platform` | Local dev bootstrap: `bootstrap.sh` clones the other repos and links each to Infisical, this doc |
+| 1 | `platform` | Local dev bootstrap: `bootstrap.sh` clones the other repos and the secrets vault, this doc |
 | 2 | `core-api` | Authentication and organizations |
 | 3 | `video-service` | LiveKit token issuance and the video call |
 | 4 | `sandbox-orchestrator` | Per-session containers, powers both VSCode test and DSA round |
 | 5 | `judge-service` | Runs and grades submitted code (Judge0/Piston) |
 | 6 | `collab-service` | Live collaborative code editor (Yjs) |
 | 7 | `web-frontend` | The actual app: video panel, editor panel, preview panel |
+| 8 | `secrets-vault` | One encrypted file holding every service's environment variables |
 
 No separate "orchestrator" service. `core-api` owns session state directly at this size.
 
@@ -157,13 +158,13 @@ No separate "orchestrator" service. `core-api` owns session state directly at th
 
 ### Prerequisites
 
-Three things, nothing else:
+A handful of small tools, no accounts, no signups:
 - `git`
 - `docker` and `docker compose`
-- the [Infisical CLI](https://infisical.com/docs/cli/overview): `brew install infisical/get-cli/infisical`
+- [`age`](https://github.com/FiloSottile/age) and [`direnv`](https://direnv.net)
 
-Node.js, Python, and Postgres are not required on your machine. Every service runs inside a
-container; secrets are fetched from Infisical at startup, never written to a file.
+`bootstrap.sh` installs `age` and `direnv` for you via Homebrew if they're missing. Node.js,
+Python, and Postgres are not required on your machine, every service runs inside a container.
 
 ### Setup
 
@@ -173,20 +174,23 @@ cd platform
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` installs the Infisical CLI if it's missing, logs you in (opens a browser), clones
-every service repo into `services/<name>`, and links each one to the Infisical project.
+`bootstrap.sh` clones `secrets-vault` (a separate private repo holding every service's
+environment variables, encrypted) to `~/.secrets-vault`, decrypts it into a shared local cache
+at `~/.config/interview-platform/env/` (one passphrase prompt, ask the project owner for it),
+then clones every service repo into `services/<name>` and trusts each one's `.envrc`.
 
 ### Running
 
 ```bash
-infisical run --env dev -- docker compose up
+docker compose up
 ```
 
 This builds and starts every service together. `core-api` is available at
 `http://localhost:4000`, `web-frontend` at `http://localhost:3000`.
 
-Inviting a new collaborator: add them to the GitHub repos and to the Infisical project. No
-credentials get sent to anyone directly.
+Inviting a new collaborator: add them to the GitHub repos, and give them the `secrets-vault`
+passphrase directly (in person or over a channel you both already trust, never email or a
+public channel). No dashboard, no per-project account.
 
 ---
 
