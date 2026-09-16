@@ -46,9 +46,6 @@ cat <<'EOF'
 
 Done. Each service is cloned into services/<name> and linked to Infisical.
 
-Next, per service you want to run (see each one's own README for exact
-commands, they differ by stack):
-  cd services/<name>
-  npm install
-  npm run dev
+Next:
+  infisical run --env dev -- docker compose up
 EOF
