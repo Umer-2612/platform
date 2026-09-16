@@ -6,6 +6,21 @@ One interview room, three modes, one team building it. This doc is the plan: arc
 
 ---
 
+## Current status
+
+Update this section whenever something actually ships, it's the one place anyone (including future you) can check without re-reading every repo.
+
+| Repo | Status |
+|---|---|
+| `core-api` | Auth flow built and tested (login, invite-accept, me, logout). Company/User/Invitation only, jobs/candidates/sessions removed on purpose, coming back one at a time. Linked to Infisical. |
+| `web-frontend` | Login, invite-accept, and a minimal dashboard built. Not yet linked to Infisical or verified live against `core-api` in a browser. |
+| `platform` | This doc plus `bootstrap.sh` and `repos.manifest` (clones the other repos, links each to Infisical). No docker-compose yet, neither service is containerized right now, both just run via `npm run dev` against the shared Supabase database. |
+| `video-service`, `sandbox-orchestrator`, `judge-service`, `collab-service` | Not started. |
+
+Database: one shared Supabase Postgres instance across every repo, not local Docker Postgres. `core-api` connects via `DATABASE_URL` (pooled) and `DIRECT_URL` (direct, for migrations), both live in Infisical.
+
+---
+
 ## 1. The idea
 
 - Not three separate tools: **one interview room with switchable modes**.
@@ -120,8 +135,8 @@ sequenceDiagram
 
 | # | Repo | Purpose |
 |---|---|---|
-| 1 | `platform` | Local dev bootstrap: one `docker-compose.yml` for everything, secrets, this doc |
-| 2 | `core-api` | Auth, orgs, jobs, candidates, resume parsing, session state |
+| 1 | `platform` | Local dev bootstrap: `bootstrap.sh` clones the other repos and links each to Infisical, this doc |
+| 2 | `core-api` | Auth today (orgs, jobs, candidates, resume parsing, session state come back one at a time) |
 | 3 | `video-service` | LiveKit token issuance and the video call |
 | 4 | `sandbox-orchestrator` | Per-session containers, powers both VSCode test and DSA round |
 | 5 | `judge-service` | Runs and grades submitted code (Judge0/Piston) |
@@ -134,18 +149,30 @@ No separate "orchestrator" service. `core-api` owns session state directly at th
 
 ## 6. Data
 
-- **One Postgres database.** Each service owns its tables; others go through its API, not direct SQL.
-- Starting schema, lift close to `Codeinterview`'s Prisma model:
-  - `User`, `Room`, `Participant`, `Question` (`starterCode` / `testCases` as JSON), `Schedule`
-  - Add: org/company (multi-tenant), scorecards, submission results
+- **One Postgres database, hosted on Supabase.** Shared across every repo. Each service owns its
+  own tables; others go through its API, not direct SQL.
+- `core-api` today: `Company`, `User`, `Invitation` (see its `API.md` for the exact relationships).
+  Jobs/candidates/interview-sessions/scorecards come back one at a time, each with its schema
+  decided deliberately when it's actually needed, not lifted wholesale from a reference repo.
 
 ---
 
 ## 7. Onboarding (no setup calls needed)
 
-- One command: `git clone platform`, then `./bootstrap.sh`, then `docker compose up -d`, then `make migrate seed`
-- Secrets in a vault (**Infisical**, free tier is fine at this size), not in files people pass around
-- Everything runs in Docker: no local Node/Python/Postgres installs, no "works on my machine"
+```bash
+git clone https://github.com/Umer-2612/platform.git
+cd platform
+./bootstrap.sh          # installs the Infisical CLI if needed, logs you in, clones every
+                         # service into services/<name>, links each to the Infisical project
+```
+
+Then, per service you actually want to run: `cd services/<name> && npm install && npm run dev`
+(check that service's own README, commands differ slightly by stack). No docker-compose
+aggregation yet, that's worth building once a service actually needs to run in a container
+(the sandbox/judge services will, `core-api`/`web-frontend` don't).
+
+Secrets live in Infisical (not files people pass around); inviting a new collaborator means
+adding them to the GitHub repos and the Infisical project, not sharing credentials.
 
 ---
 

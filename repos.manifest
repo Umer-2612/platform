@@ -1,0 +1,9 @@
+# name=git url. One line per service repo. Read by bootstrap.sh.
+# HTTPS, not SSH: repos are public, no key setup needed to clone.
+
+core-api=https://github.com/Umer-2612/core-api.git
+video-service=https://github.com/Umer-2612/video-service.git
+sandbox-orchestrator=https://github.com/Umer-2612/sandbox-orchestrator.git
+judge-service=https://github.com/Umer-2612/judge-service.git
+collab-service=https://github.com/Umer-2612/collab-service.git
+web-frontend=https://github.com/Umer-2612/web-frontend.git
