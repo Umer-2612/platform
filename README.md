@@ -6,18 +6,15 @@ One interview room, three modes, one team building it. This doc is the plan: arc
 
 ---
 
-## Current status
+## What's implemented
 
-Update this section whenever something actually ships, it's the one place anyone (including future you) can check without re-reading every repo.
+- `core-api`: authentication and organizations. Login, invitation-based account creation
+  (including founding a new organization on acceptance), session lookup, logout.
+- `web-frontend`: the pages that use `core-api`'s authentication: sign in, accept an
+  invitation, a dashboard showing the logged-in user.
+- `video-service`, `sandbox-orchestrator`, `judge-service`, `collab-service`: not implemented.
 
-| Repo | Status |
-|---|---|
-| `core-api` | Auth flow built and tested (login, invite-accept, me, logout). Company/User/Invitation only, jobs/candidates/sessions removed on purpose, coming back one at a time. Linked to Infisical. |
-| `web-frontend` | Login, invite-accept, and a minimal dashboard built. Not yet linked to Infisical or verified live against `core-api` in a browser. |
-| `platform` | This doc plus `bootstrap.sh` and `repos.manifest` (clones the other repos, links each to Infisical). No docker-compose yet, neither service is containerized right now, both just run via `npm run dev` against the shared Supabase database. |
-| `video-service`, `sandbox-orchestrator`, `judge-service`, `collab-service` | Not started. |
-
-Database: one shared Supabase Postgres instance across every repo, not local Docker Postgres. `core-api` connects via `DATABASE_URL` (pooled) and `DIRECT_URL` (direct, for migrations), both live in Infisical.
+Database: one Postgres database, hosted on Supabase, shared by every repo in this project.
 
 ---
 
@@ -136,7 +133,7 @@ sequenceDiagram
 | # | Repo | Purpose |
 |---|---|---|
 | 1 | `platform` | Local dev bootstrap: `bootstrap.sh` clones the other repos and links each to Infisical, this doc |
-| 2 | `core-api` | Auth today (orgs, jobs, candidates, resume parsing, session state come back one at a time) |
+| 2 | `core-api` | Authentication and organizations |
 | 3 | `video-service` | LiveKit token issuance and the video call |
 | 4 | `sandbox-orchestrator` | Per-session containers, powers both VSCode test and DSA round |
 | 5 | `judge-service` | Runs and grades submitted code (Judge0/Piston) |
@@ -151,28 +148,45 @@ No separate "orchestrator" service. `core-api` owns session state directly at th
 
 - **One Postgres database, hosted on Supabase.** Shared across every repo. Each service owns its
   own tables; others go through its API, not direct SQL.
-- `core-api` today: `Company`, `User`, `Invitation` (see its `API.md` for the exact relationships).
-  Jobs/candidates/interview-sessions/scorecards come back one at a time, each with its schema
-  decided deliberately when it's actually needed, not lifted wholesale from a reference repo.
+- `core-api` owns `Company`, `User`, `Invitation` (see its `API.md` for the exact relationships).
+- Jobs, candidates, interview sessions, and scorecards are not yet implemented.
 
 ---
 
-## 7. Onboarding (no setup calls needed)
+## 7. Running everything
+
+### Prerequisites
+
+Three things, nothing else:
+- `git`
+- `docker` and `docker compose`
+- the [Infisical CLI](https://infisical.com/docs/cli/overview): `brew install infisical/get-cli/infisical`
+
+Node.js, Python, and Postgres are not required on your machine. Every service runs inside a
+container; secrets are fetched from Infisical at startup, never written to a file.
+
+### Setup
 
 ```bash
 git clone https://github.com/Umer-2612/platform.git
 cd platform
-./bootstrap.sh          # installs the Infisical CLI if needed, logs you in, clones every
-                         # service into services/<name>, links each to the Infisical project
+./bootstrap.sh
 ```
 
-Then, per service you actually want to run: `cd services/<name> && npm install && npm run dev`
-(check that service's own README, commands differ slightly by stack). No docker-compose
-aggregation yet, that's worth building once a service actually needs to run in a container
-(the sandbox/judge services will, `core-api`/`web-frontend` don't).
+`bootstrap.sh` installs the Infisical CLI if it's missing, logs you in (opens a browser), clones
+every service repo into `services/<name>`, and links each one to the Infisical project.
 
-Secrets live in Infisical (not files people pass around); inviting a new collaborator means
-adding them to the GitHub repos and the Infisical project, not sharing credentials.
+### Running
+
+```bash
+infisical run --env dev -- docker compose up
+```
+
+This builds and starts every service together. `core-api` is available at
+`http://localhost:4000`, `web-frontend` at `http://localhost:3000`.
+
+Inviting a new collaborator: add them to the GitHub repos and to the Infisical project. No
+credentials get sent to anyone directly.
 
 ---
 
