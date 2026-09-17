@@ -13,7 +13,6 @@ services:
       - CREDENTIALS
       - CORS_ORIGINS
       - DATABASE_URL
-      - DIRECT_URL
       - FRONTEND_URL
       - INVITATION_EXPIRY_HOURS
       - SUPER_ADMIN_EMAIL
