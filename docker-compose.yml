@@ -13,13 +13,10 @@ services:
       - CREDENTIALS
       - CORS_ORIGINS
       - DATABASE_URL
-      - FRONTEND_URL
-      - INVITATION_EXPIRY_HOURS
       - SUPER_ADMIN_EMAIL
       - SUPER_ADMIN_PASSWORD
       - SUPER_ADMIN_NAME
       - SUPER_ADMIN_COMPANY_NAME
-      - SUPER_ADMIN_COMPANY_SLUG
     volumes:
       - ./services/core-api/src:/app/src
       - ./services/core-api/prisma:/app/prisma
