@@ -128,7 +128,7 @@ sequenceDiagram
 
 ---
 
-## 5. Repos (8 total)
+## 5. Repos (9 total)
 
 | # | Repo | Purpose |
 |---|---|---|
@@ -140,6 +140,7 @@ sequenceDiagram
 | 6 | `collab-service` | Live collaborative code editor (Yjs) |
 | 7 | `web-frontend` | The actual app: video panel, editor panel, preview panel |
 | 8 | `secrets-vault` | One encrypted file holding every service's environment variables |
+| 9 | `bruno-collection` | Bruno requests for testing `core-api` by hand, by role |
 
 No separate "orchestrator" service. `core-api` owns session state directly at this size.
 
@@ -174,10 +175,11 @@ cd platform
 ./bootstrap.sh
 ```
 
-`bootstrap.sh` clones `secrets-vault` (a separate private repo holding every service's
+`bootstrap.sh` clones `secrets-vault` (a separate public repo holding every service's
 environment variables, encrypted) to `~/.secrets-vault`, decrypts it into a shared local cache
 at `~/.config/interview-platform/env/` (one passphrase prompt, ask the project owner for it),
-then clones every service repo into `services/<name>` and trusts each one's `.envrc`.
+then clones every service repo, including `bruno-collection`, into `services/<name>` and trusts
+each one's `.envrc`.
 
 ### Running
 
@@ -187,6 +189,12 @@ docker compose up
 
 This builds and starts every service together. `core-api` is available at
 `http://localhost:4000`, `web-frontend` at `http://localhost:3000`.
+
+### Testing the API by hand
+
+Open `services/bruno-collection` in the [Bruno](https://www.usebruno.com) desktop app to run
+requests against `core-api` as a super admin or a hiring manager. See that repo's README for
+the run order.
 
 Inviting a new collaborator: add them to the GitHub repos, and give them the `secrets-vault`
 passphrase directly (in person or over a channel you both already trust, never email or a
