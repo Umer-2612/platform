@@ -8,10 +8,14 @@ One interview room, three modes, one team building it. This doc is the plan: arc
 
 ## What's implemented
 
-- `core-api`: authentication and organizations. Login, invitation-based account creation
-  (including founding a new organization on acceptance), session lookup, logout.
-- `web-frontend`: the pages that use `core-api`'s authentication: sign in, accept an
-  invitation, a dashboard showing the logged-in user.
+- `core-api`: authentication and organizations (login, direct account creation with no invite
+  step, session lookup, logout); jobs; candidates (bulk PDF resume upload, stored in S3, each
+  parsed with no AI for name/email/phone/summary/skills/experience/education/other resume
+  sections/hyperlinks); one-time interview scheduling (creates its three rounds, running the
+  rounds themselves isn't implemented yet).
+- `web-frontend`: sign in, a companies page (super admin), a team page, a jobs list and job
+  detail page (resume upload, candidate list, scheduling), and a candidate detail page showing
+  the full parsed resume profile with inline resume links.
 - `video-service`, `sandbox-orchestrator`, `judge-service`, `collab-service`: not implemented.
 
 Database: one Postgres database, hosted on Supabase, shared by every repo in this project.
@@ -150,8 +154,10 @@ No separate "orchestrator" service. `core-api` owns session state directly at th
 
 - **One Postgres database, hosted on Supabase.** Shared across every repo. Each service owns its
   own tables; others go through its API, not direct SQL.
-- `core-api` owns `Company`, `User`, `Invitation` (see its `API.md` for the exact relationships).
-- Jobs, candidates, interview sessions, and scorecards are not yet implemented.
+- `core-api` owns `Company`, `User`, `Job`, `Candidate`, `CandidateProfile`, `InterviewSession`,
+  `InterviewRound` (see its `API.md` for the exact relationships).
+- Scorecards, and everything the video/sandbox/judge/collab services would own, are not yet
+  implemented.
 
 ---
 
