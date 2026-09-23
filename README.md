@@ -71,8 +71,9 @@ flowchart TB
   Nothing skips this by connecting to Postgres directly, no matter how convenient that'd be.
 - **Services split by what they actually need**, not by convenience:
   - `core-api`: plain CRUD, plus anything that needs the data it already owns (JD text,
-    resume, question bank), including calling an LLM to generate technical-round questions,
-    see "Per-round data flow" below.
+    resume, question bank) or must stay server-side (grading a dsa submission's hidden test
+    cases by calling judge-service itself, generating technical-round questions by calling an
+    LLM), see "Per-round data flow" below.
   - `video-service`: media server (very different from CRUD) plus the AI voice layer (STT/TTS)
     for the technical round, relays text to/from core-api, stores nothing itself.
   - `sandbox-orchestrator` / `judge-service`: run untrusted code, need isolation, never touch
@@ -89,9 +90,16 @@ a running sandbox) to the service built for it, and reports the result back to c
 ```
 DSA (built):
   web-frontend --GET /portal/:token/dsa--> core-api (owns Question, InterviewRound)
-    -> assigns a question from the pool the first time it's opened, then keeps it fixed
-  web-frontend --POST /execute--> judge-service (stateless) --> Judge0 (sandboxed run)
-  web-frontend --POST /portal/:token/dsa/submit--> core-api (persists submission, locks round)
+    -> assigns 2 questions from the pool the first time it's opened, then keeps them fixed
+  web-frontend --POST /portal/:token/dsa/start--> core-api (idempotent: starts the 60-minute
+    timer the first time, a reload just returns the same started_at, never resets the clock)
+  web-frontend --POST /execute--> judge-service (stateless) --> Judge0
+    (ad hoc "Run" with custom stdin, unsaved, ungraded, browser talks to judge-service directly)
+  web-frontend --POST /portal/:token/dsa/questions/:id/run-tests--> core-api
+    -> core-api --> judge-service --> Judge0, once per test case, server-to-server
+       (grading has to happen here: the hidden test cases must never reach the browser)
+  web-frontend --POST /portal/:token/dsa/questions/:id/submit--> core-api (grades the same
+    way, locks that question in, flips the round to completed once both are submitted)
 
 AI Technical (not built yet):
   web-frontend --GET /portal/:token/technical-ai--> core-api
