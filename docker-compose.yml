@@ -25,6 +25,22 @@ services:
       - ./services/core-api/src:/app/src
       - ./services/core-api/prisma:/app/prisma
 
+  judge-service:
+    build:
+      context: ./services/judge-service
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=development
+      - PORT=4001
+      - CORS_ORIGINS=http://localhost:3000
+      # Judge0 itself isn't part of this compose file, it runs as its own
+      # separate stack directly on the host. host.docker.internal reaches it
+      # from inside this container. See judge-service's README.
+      - JUDGE0_URL=http://host.docker.internal:2358
+    volumes:
+      - ./services/judge-service/src:/app/src
+
   web-frontend:
     build:
       context: ./services/web-frontend
@@ -32,7 +48,9 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+      - NEXT_PUBLIC_JUDGE_URL=http://localhost:4001
     volumes:
       - ./services/web-frontend/src:/app/src
     depends_on:
       - core-api
+      - judge-service
