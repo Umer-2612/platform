@@ -76,9 +76,9 @@ flowchart TB
 
     FE -->|"REST, owns all durable data"| Core["core-api\nauth, orgs, jobs, candidates,\nsessions, questions, submissions"]
     FE -->|"stateless compute only"| Judge["judge-service\nruns code via Judge0"]
-    FE --> Video["video-service\nLiveKit call + AI voice"]
+    FE --> Video["video-call-service\nLiveKit call + AI voice"]
     FE --> Collab["collab-service\nlive code sync (Yjs)"]
-    FE --> Sandbox["sandbox-orchestrator\nper-session containers"]
+    FE --> Sandbox["workspace-orchestrator\nper-session containers"]
 
     Sandbox -.->|"what to provision"| Core
     Video -.->|"JD/resume in, transcript out"| Core
@@ -87,8 +87,8 @@ flowchart TB
 ```
 
 **core-api is the only service with a database connection.** Every other service is either
-fully stateless (`judge-service`) or holds only ephemeral runtime state (`sandbox-orchestrator`'s
-running containers, a live call in `video-service`), never anything durable. A service that
+fully stateless (`judge-service`) or holds only ephemeral runtime state (`workspace-orchestrator`'s
+running containers, a live call in `video-call-service`), never anything durable. A service that
 needs candidate/job/question/submission data gets it through a core-api endpoint; a service
 that produces durable data (a submission, a transcript, a bug-fix result) posts it back to a
 core-api endpoint. Nothing skips this by connecting to Postgres directly, no matter how
@@ -101,9 +101,9 @@ convenient that'd be.
   calling judge-service itself, generating technical-round questions by calling an LLM). The
   LLM call lives here rather than a separate service because core-api already holds the JD and
   resume needed to build the prompt.
-- `video-service`: media server plus the AI voice layer (STT/TTS) for the technical round,
+- `video-call-service`: media server plus the AI voice layer (STT/TTS) for the technical round,
   relays text to/from core-api, stores nothing itself.
-- `sandbox-orchestrator` / `judge-service`: run untrusted code, need isolation, never touch
+- `workspace-orchestrator` / `judge-service`: run untrusted code, need isolation, never touch
   Postgres.
 - `collab-service`: long-lived WebSocket connections.
 
@@ -115,13 +115,13 @@ convenient that'd be.
 | `core-api` | Auth, orgs, jobs, candidates, resume parsing, interview sessions and rounds |
 | `web-frontend` | The dashboard and the candidate portal |
 | `judge-service` | Proxies code execution to a self-hosted Judge0 instance |
-| `video-service` | LiveKit call issuance, AI voice layer for the technical round |
-| `sandbox-orchestrator` | Per-session containers, powers the VSCode bug-fix round |
+| `video-call-service` | LiveKit call issuance, AI voice layer for the technical round |
+| `workspace-orchestrator` | Per-session containers, powers the VSCode bug-fix round |
 | `collab-service` | Live collaborative code sync (Yjs) |
 | `secrets-vault` | One encrypted file holding every service's environment variables |
 | `bruno-collection` | Bruno requests for testing `core-api` by hand, by role |
 
-No separate "orchestrator" service beyond `sandbox-orchestrator`'s own narrow job. `core-api`
+No separate "orchestrator" service beyond `workspace-orchestrator`'s own narrow job. `core-api`
 owns session state directly at this size.
 
 ---
@@ -167,7 +167,7 @@ web-frontend --GET /portal/:token/technical-ai--> core-api
   -> core-api already owns the JD (Job.description) and resume (CandidateProfile),
      calls an LLM (Groq now, swappable to Claude later behind one provider interface)
      to generate questions the first time this round opens, same lazy-assign pattern as DSA
-Live in the call: video-service's AI voice layer asks each question (TTS) and hears the
+Live in the call: video-call-service's AI voice layer asks each question (TTS) and hears the
   candidate's answer (STT), relaying text to/from core-api as it goes
 web-frontend --POST /portal/:token/technical-ai/responses--> core-api (persists the transcript)
 ```
@@ -176,7 +176,7 @@ web-frontend --POST /portal/:token/technical-ai/responses--> core-api (persists 
 ```
 web-frontend --GET /portal/:token/vscode--> core-api
   -> owns which seeded repo + which 1-2 bugs this round uses (own table, same shape as Question)
-sandbox-orchestrator asks core-api what to provision, provisions the editor + running-app
+workspace-orchestrator asks core-api what to provision, provisions the editor + running-app
   containers (ephemeral, no database of its own), the candidate fixes the bug in-browser
 web-frontend --POST /portal/:token/vscode/submit--> core-api (persists the result: tests
   passed, diff, whatever "graded" means for this round)
