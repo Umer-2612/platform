@@ -21,6 +21,9 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - S3_BUCKET_NAME
+      # Not consumed by any code yet (the AI technical round isn't built), reserved
+      # ahead of time, see secrets-vault's vault.env.template.
+      - GROQ_API_KEY
       # Grading a dsa submission's test cases calls judge-service server-to-server
       # (not through the browser). Same compose network, so the service name
       # resolves directly, no host.docker.internal needed here.
