@@ -54,6 +54,19 @@ docker compose up
 `judge-service` at `http://localhost:4001`. Self-hosted Judge0 (code execution) is expected to
 already be running separately on the host, see `judge-service`'s README.
 
+### Staying up to date
+
+```bash
+./update.sh
+```
+
+Run this whenever someone has pushed. It pulls `platform` and every service, refreshes your env
+files if the secrets vault changed (it asks for the passphrase only then), and updates the running
+containers. Code changes are picked up live, so it rebuilds only when dependencies, a Dockerfile,
+the Prisma schema, the compose file or the env changed, and it applies new database migrations for
+`core-api`. A service with local changes, or checked out on another branch, is skipped with a
+warning. `./update.sh --no-docker` pulls without touching Docker.
+
 ### Testing the API by hand
 
 Open `services/bruno-collection` in the [Bruno](https://www.usebruno.com) desktop app to run
@@ -111,7 +124,7 @@ convenient that'd be.
 
 | Repo | Purpose |
 |---|---|
-| `platform` | Local dev bootstrap (`bootstrap.sh`), docker-compose, this doc |
+| `platform` | Local dev bootstrap (`bootstrap.sh`), one-command updates (`update.sh`), docker-compose, this doc |
 | `core-api` | Auth, orgs, jobs, candidates, resume parsing, interview sessions and rounds |
 | `web-frontend` | The dashboard and the candidate portal |
 | `judge-service` | Proxies code execution to a self-hosted Judge0 instance |
